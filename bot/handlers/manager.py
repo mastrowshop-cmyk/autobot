@@ -11,11 +11,11 @@ def get_manager_id(user_id: int, sessions: dict) -> int | None:
     return sessions.get(user_id)
 
 
-@router.message(F.text == "/menu")
+@router.message(F.text == "📋 Меню менеджера")
 async def menu(m: Message, sessions: dict):
     mid = get_manager_id(m.from_user.id, sessions)
     if not mid:
-        return await m.answer("Сначала войди: /login <код>")
+        return await m.answer("Сначала войди как менеджер: нажми «Вход менеджера» и введи секретный код.")
 
     text = (
         "📋 Меню менеджера:
@@ -34,8 +34,6 @@ async def menu(m: Message, sessions: dict):
 "
         "/transfer <client_id> <manager_id> – передать клиента
 "
-        "/stats – статистика (для lead/admin/superadmin)
-"
     )
     await m.answer(text)
 
@@ -44,7 +42,7 @@ async def menu(m: Message, sessions: dict):
 async def change_status(m: Message, db, sessions: dict):
     mid = get_manager_id(m.from_user.id, sessions)
     if not mid:
-        return await m.answer("Сначала войди: /login <код>")
+        return await m.answer("Сначала войди как менеджер через «Вход менеджера».")
 
     mgr = await db.get(Manager, mid)
     if not mgr:
@@ -67,7 +65,7 @@ async def change_status(m: Message, db, sessions: dict):
 async def my_clients(m: Message, db, sessions: dict):
     mid = get_manager_id(m.from_user.id, sessions)
     if not mid:
-        return await m.answer("Сначала войди: /login <код>")
+        return await m.answer("Сначала войди как менеджер.")
 
     result = await db.execute(select(Client).where(Client.manager_id == mid).order_by(Client.id.asc()))
     clients = result.scalars().all()
@@ -89,7 +87,7 @@ async def my_clients(m: Message, db, sessions: dict):
 async def select_client(m: Message, db, sessions: dict, active_dialogs: dict, active_orders: dict):
     mid = get_manager_id(m.from_user.id, sessions)
     if not mid:
-        return await m.answer("Сначала войди: /login <код>")
+        return await m.answer("Сначала войди как менеджер.")
 
     parts = m.text.strip().split()
     if len(parts) != 2 or not parts[1].isdigit():
@@ -129,7 +127,7 @@ async def select_client(m: Message, db, sessions: dict, active_dialogs: dict, ac
 async def set_order(m: Message, db, sessions: dict):
     mid = get_manager_id(m.from_user.id, sessions)
     if not mid:
-        return await m.answer("Сначала войди: /login <код>")
+        return await m.answer("Сначала войди как менеджер.")
 
     parts = m.text.strip().split()
     if len(parts) < 5:
@@ -161,53 +159,14 @@ async def set_order(m: Message, db, sessions: dict):
     db.add(order)
     await db.commit()
 
-    await m.answer(f"Параметры заказа #{order.order_number or order.id} обновлены.")
-
-
-@router.message(F.text == "/stats")
-async def stats(m: Message, db, sessions: dict):
-    mid = get_manager_id(m.from_user.id, sessions)
-    if not mid:
-        return await m.answer("Сначала войди: /login <код>")
-
-    mgr = await db.get(Manager, mid)
-    if not mgr or mgr.role not in (Role.lead, Role.admin, Role.superadmin):
-        return await m.answer("Недостаточно прав.")
-
-    total_clients = (await db.execute(select(func.count(Client.id)))).scalar_one()
-    total_managers = (await db.execute(select(func.count(Manager.id)))).scalar_one()
-    total_orders = (await db.execute(select(func.count(Order.id)))).scalar_one()
-    total_active = (await db.execute(select(func.count(Order.id)).where(Order.status == OrderStatus.active))).scalar_one()
-    total_closed = (await db.execute(select(func.count(Order.id)).where(Order.status == OrderStatus.closed))).scalar_one()
-    total_amount = (await db.execute(select(func.coalesce(func.sum(Order.amount), 0)))).scalar_one()
-
-    result = await db.execute(select(Manager))
-    managers = result.scalars().all()
-
-    text_lines = [
-        "📊 Статистика:",
-        f"Клиентов всего: {total_clients}",
-        f"Менеджеров всего: {total_managers}",
-        f"Заказов всего: {total_orders}",
-        f"Активных заказов: {total_active}",
-        f"Закрытых заказов: {total_closed}",
-        f"Сумма по всем заказам: {float(total_amount):.2f}",
-        "",
-        "Менеджеры:",
-    ]
-    for mng in managers:
-        text_lines.append(
-            f"- {mng.id}: {mng.first_name} ({mng.role.value}), статус: {mng.status.value}"
-        )
-
-    await m.answer("\n".join(text_lines))
+    await m.answer(f"Параметры заказа {order.order_number or order.id} обновлены.")
 
 
 @router.message(F.text.regexp(r"^/transfer "))
 async def transfer_client(m: Message, db, sessions: dict, active_dialogs: dict, active_orders: dict, bot):
     mid = get_manager_id(m.from_user.id, sessions)
     if not mid:
-        return await m.answer("Сначала войди: /login <код>")
+        return await m.answer("Сначала войди как менеджер.")
 
     parts = m.text.strip().split()
     if len(parts) != 3 or not parts[1].isdigit() or not parts[2].isdigit():

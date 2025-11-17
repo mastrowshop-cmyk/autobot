@@ -3,7 +3,7 @@ from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 from sqlalchemy import select
 from datetime import datetime
 
-from ..models import Client, Direction, Order, OrderStatus
+from ..models import Client, Direction, Order, OrderStatus, Manager
 from .client import get_or_create_client, assign_manager
 
 router = Router()
@@ -14,6 +14,8 @@ BTN_SERVICE = "Оплата сервиса"
 BTN_CONTACT = "Связаться с менеджером"
 BTN_CHANGE_DIRECTION = "Изменить направление"
 BTN_FINISH_ORDER = "Завершить заказ"
+BTN_MANAGER_LOGIN = "Вход менеджера"
+BTN_ADMIN_PANEL = "/admin"
 
 
 def main_menu_kb() -> ReplyKeyboardMarkup:
@@ -22,6 +24,7 @@ def main_menu_kb() -> ReplyKeyboardMarkup:
             [KeyboardButton(text=BTN_TRANSFERS)],
             [KeyboardButton(text=BTN_ALIPAY)],
             [KeyboardButton(text=BTN_SERVICE)],
+            [KeyboardButton(text=BTN_MANAGER_LOGIN)],
         ],
         resize_keyboard=True,
     )
@@ -168,7 +171,6 @@ async def contact_manager(m: Message, db, bot, active_dialogs: dict, active_orde
             f"Чтобы начать писать клиенту: /chat {client.id}\n"
             f"Когда закончите — нажмите «{BTN_FINISH_ORDER}»."
         ),
-        reply_markup=in_order_kb(),
     )
 
     await m.answer(

@@ -35,10 +35,9 @@ class Manager(Base):
 
     id = Column(Integer, primary_key=True)
     first_name = Column(String, nullable=False)
-    login_code = Column(String, unique=True, nullable=False)
+    tg_user_id = Column(Integer, nullable=True)
     role = Column(Enum(Role), default=Role.manager, nullable=False)
     status = Column(Enum(Status), default=Status.offline, nullable=False)
-    tg_user_id = Column(Integer, nullable=True)
 
     clients = relationship("Client", back_populates="manager")
     orders = relationship("Order", back_populates="manager")

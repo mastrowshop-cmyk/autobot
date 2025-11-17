@@ -1,47 +1,63 @@
-from aiogram import Router
-from aiogram.types import Message
-from aiogram.filters import Command
+from aiogram import Router, F
+from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 from sqlalchemy import select
 
 from ..models import Manager, Status, Role
+from ..config import load_config
 
 router = Router()
+cfg = load_config()
 
 
-@router.message(Command("login"))
-async def login(m: Message, db, sessions: dict, active_dialogs: dict, active_orders: dict):
-    parts = m.text.strip().split()
-    if len(parts) != 2:
-        return await m.answer("Использование: /login <код>")
+def manager_menu_kb() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="📋 Меню менеджера")],
+        ],
+        resize_keyboard=True,
+    )
 
-    code = parts[1]
-    result = await db.execute(select(Manager).where(Manager.login_code == code))
+
+@router.message(F.text == "Вход менеджера")
+async def manager_login_start(m: Message):
+    await m.answer("Введите секретный код менеджера:")
+
+
+@router.message(F.text.func(lambda t: t and t.strip() == cfg.manager_secret_code))
+async def manager_login_complete(m: Message, db, sessions: dict, active_dialogs: dict, active_orders: dict):
+    # найти или создать менеджера по tg_user_id
+    result = await db.execute(select(Manager).where(Manager.tg_user_id == m.from_user.id))
     mgr = result.scalar_one_or_none()
 
     if not mgr:
-        return await m.answer("Неверный код. Обратись к старшему.")
+        mgr = Manager(
+            first_name=m.from_user.full_name or "Без имени",
+            tg_user_id=m.from_user.id,
+            role=Role.manager,
+            status=Status.online,
+        )
+    else:
+        mgr.status = Status.online
 
-    mgr.tg_user_id = m.from_user.id
-    mgr.status = Status.online
     db.add(mgr)
     await db.commit()
+    await db.refresh(mgr)
 
     sessions[m.from_user.id] = mgr.id
     active_dialogs[mgr.id] = None
     active_orders[mgr.id] = None
 
     await m.answer(
-        f"Привет, {mgr.first_name}! Ты вошёл как {mgr.role.value}.
-"
-        f"Команда меню: /menu"
+        f"Привет, {mgr.first_name}! Ты вошёл как {mgr.role.value}.",
+        reply_markup=manager_menu_kb(),
     )
 
 
-@router.message(Command("logout"))
+@router.message(F.text == "/logout")
 async def logout(m: Message, db, sessions: dict, active_dialogs: dict, active_orders: dict):
     manager_id = sessions.pop(m.from_user.id, None)
     if not manager_id:
-        return await m.answer("Ты не авторизован.")
+        return await m.answer("Ты не авторизован как менеджер.")
 
     mgr = await db.get(Manager, manager_id)
     if mgr:
@@ -52,19 +68,19 @@ async def logout(m: Message, db, sessions: dict, active_dialogs: dict, active_or
     active_dialogs.pop(manager_id, None)
     active_orders.pop(manager_id, None)
 
-    await m.answer("Ты вышел из системы.")
+    await m.answer("Ты вышел из системы менеджера.")
 
 
-@router.message(Command("whoami"))
+@router.message(F.text == "/whoami")
 async def whoami(m: Message, db, sessions: dict):
-    mid = sessions.get(m.from_user.id)
-    if not mid:
-        return await m.answer("Ты не авторизован. /login <код>")
+    result = await db.execute(select(Manager).where(Manager.tg_user_id == m.from_user.id))
+    mgr = result.scalar_one_or_none()
 
-    mgr = await db.get(Manager, mid)
     if not mgr:
-        return await m.answer("Ошибка профиля. Обратись к админу.")
+        return await m.answer("Ты не менеджер. Для входа нажми «Вход менеджера» и введи код.")
 
     await m.answer(
-        f"Ты: {mgr.first_name}, роль: {mgr.role.value}, статус: {mgr.status.value}"
+        f"Ты: {mgr.first_name}\n"
+        f"Роль: {mgr.role.value}\n"
+        f"Статус: {mgr.status.value}"
     )

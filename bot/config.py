@@ -9,12 +9,14 @@ load_dotenv()
 class Config:
     token: str
     db: str
-    admin_panel_token: str
+    superadmin_id: int
+    manager_secret_code: str
 
 
 def load_config() -> Config:
     return Config(
         token=os.getenv("BOT_TOKEN", ""),
         db=os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./oplatym.db"),
-        admin_panel_token=os.getenv("ADMIN_PANEL_TOKEN", "change_me_super_secret"),
+        superadmin_id=int(os.getenv("SUPERADMIN_ID", "0")),
+        manager_secret_code=os.getenv("MANAGER_SECRET_CODE", "Nikola"),
     )

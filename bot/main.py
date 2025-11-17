@@ -11,8 +11,9 @@ from .handlers import all_routers
 async def on_startup(bot: Bot):
     commands = [
         BotCommand(command="start", description="Старт"),
-        BotCommand(command="login", description="Вход менеджера"),
-        BotCommand(command="menu", description="Меню менеджера"),
+        BotCommand(command="admin", description="Админ-панель"),
+        BotCommand(command="whoami", description="Кто я"),
+        BotCommand(command="logout", description="Выход менеджера"),
     ]
     await bot.set_my_commands(commands)
 
