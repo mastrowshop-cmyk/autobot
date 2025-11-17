@@ -18,23 +18,16 @@ async def menu(m: Message, sessions: dict):
         return await m.answer("Сначала войди как менеджер: нажми «Вход менеджера» и введи секретный код.")
 
     text = (
-        "📋 Меню менеджера:
-"
-        "/my_clients – мои клиенты
-"
-        "/online – статус онлайн
-"
-        "/busy – статус занят
-"
-        "/offline – статус оффлайн
-"
-        "/chat <client_id> – выбрать клиента для диалога
-"
-        "/set_order <order_id> <amount> <currency> <описание> – задать параметры заказа
-"
-        "/transfer <client_id> <manager_id> – передать клиента
-"
+        "📋 Меню менеджера:\n"
+        "/my_clients – мои клиенты\n"
+        "/online – статус онлайн\n"
+        "/busy – статус занят\n"
+        "/offline – статус оффлайн\n"
+        "/chat <client_id> – выбрать клиента для диалога\n"
+        "/set_order <order_id> <amount> <currency> <описание> – задать параметры заказа\n"
+        "/transfer <client_id> <manager_id> – передать клиента\n"
     )
+
     await m.answer(text)
 
 
@@ -117,8 +110,7 @@ async def select_client(m: Message, db, sessions: dict, active_dialogs: dict, ac
 
     uname = f"@{client.username}" if client.username else ""
     await m.answer(
-        f"Теперь все твои сообщения будут уходить клиенту #{client.id} {uname}.
-"
+        f"Теперь все твои сообщения будут уходить клиенту #{client.id} {uname}.\n"
         f"Чтобы сменить клиента – снова /chat <id>."
     )
 
