@@ -1,5 +1,5 @@
-import asyncio
-from bot.main import main as bot_main
+aiogram==3.13.1
+python-dotenv==1.0.1
+SQLAlchemy==2.0.30
+aiosqlite
 
-if __name__ == "__main__":
-    asyncio.run(bot_main())
