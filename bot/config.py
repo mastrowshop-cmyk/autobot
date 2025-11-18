@@ -18,3 +18,4 @@ def load_config() -> Config:
         superadmin_id=int(os.getenv("SUPERADMIN_ID", "0")),
         manager_secret_code=os.getenv("MANAGER_SECRET_CODE", "Nikola"),
     )
+
