@@ -11,6 +11,7 @@ from .handlers import all_routers
 async def main():
     cfg = load_config()
 
+    # Новый формат — только так работает в Aiogram 3.7 и выше
     bot = Bot(
         token=cfg.token,
         default=DefaultBotProperties(parse_mode="HTML")
@@ -18,17 +19,19 @@ async def main():
 
     dp = Dispatcher(storage=MemoryStorage())
 
-    # Миддлварь БД
+    # Middleware для БД
     dp.update.middleware(get_session_middleware())
 
     # Подключаем все роутеры
     for router in all_routers:
         dp.include_router(router)
 
+    # Инициализация базы
     await init_db()
 
     print("BOT STARTED")
 
+    # Запуск long-polling
     await dp.start_polling(bot)
 
 
