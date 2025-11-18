@@ -1,8 +1,9 @@
 from sqlalchemy import Column, Integer, String, DateTime, Enum, ForeignKey, Numeric
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from .database import Base
+from bot.db import Base
 import enum
+
 
 class Role(str, enum.Enum):
     superadmin = "superadmin"
@@ -10,20 +11,24 @@ class Role(str, enum.Enum):
     lead = "lead"
     manager = "manager"
 
+
 class Status(str, enum.Enum):
     online = "online"
     busy = "busy"
     offline = "offline"
+
 
 class Direction(str, enum.Enum):
     transfers = "transfers"
     alipay = "alipay"
     service = "service"
 
+
 class OrderStatus(str, enum.Enum):
     new = "new"
     active = "active"
     closed = "closed"
+
 
 class Manager(Base):
     __tablename__ = "managers"
@@ -37,6 +42,7 @@ class Manager(Base):
     clients = relationship("Client", back_populates="manager")
     orders = relationship("Order", back_populates="manager")
 
+
 class Client(Base):
     __tablename__ = "clients"
 
@@ -45,32 +51,33 @@ class Client(Base):
     username = Column(String, nullable=True)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
-    manager_id = Column(Integer, ForeignKey("managers.id"), nullable=True)
+    manager_id = Column(Integer, ForeignKey("managers.id"))
     manager = relationship("Manager", back_populates="clients")
 
     current_direction = Column(Enum(Direction), nullable=True)
 
     orders = relationship("Order", back_populates="client")
 
+
 class Order(Base):
     __tablename__ = "orders"
 
     id = Column(Integer, primary_key=True)
-    order_number = Column(String, unique=True, nullable=True)
+    order_number = Column(String, unique=True)
 
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
     manager_id = Column(Integer, ForeignKey("managers.id"), nullable=False)
 
     direction = Column(Enum(Direction), nullable=False)
-    status = Column(Enum(OrderStatus), default=OrderStatus.active, nullable=False)
+    status = Column(Enum(OrderStatus), default=OrderStatus.active)
 
-    amount = Column(Numeric(12, 2), nullable=True)
-    currency = Column(String, nullable=True)
-    service_desc = Column(String, nullable=True)
+    amount = Column(Numeric(12, 2))
+    currency = Column(String)
+    service_desc = Column(String)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
     closed_at = Column(DateTime, nullable=True)
 
     client = relationship("Client", back_populates="orders")
